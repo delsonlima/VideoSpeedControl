@@ -1,10 +1,10 @@
 /*
-** Video Speed Controller
+** Video Speed Control
 */
 
 var vscContainer   = document.createElement("div");
 vscContainer.id    = "vscContainer";
-vscContainer.style = "position:absolute;top:0px;right:0px;z-index:10000";
+vscContainer.style = "position:fixed;top:0px;right:0px;z-index:10000";
 document.body.appendChild(vscContainer);
 
 var vscVelocity   = document.createElement("select");
@@ -25,26 +25,28 @@ for (var i = 0; i < vscVelocitiesArray.length; i++) {
 }
 
 function vscUpdateVideoSpeed(vscSpeed) {
-    var videoTag = null;
+    var videoTags = document.querySelectorAll("video");
+    var iframeTags = document.querySelectorAll("iframe");
+    var res = true;
 
-    if (document.querySelector("video") != null) {
-        videoTag = document.querySelector("video");
-    } else {
-        var frameQuery = document.querySelector("iframe");
-        if (frameQuery != null) {
-            var videoOnFrameQuery = frameQuery.contentWindow.document.querySelector("video");
-            if (videoOnFrameQuery != null) {
-                videoTag = videoOnFrameQuery;
-            }
+    var changeTags = function(tags) {
+        for (var i=0; i<tags.length; i++) {
+            console.log("vsc: video speed changed -> " + vscSpeed);
+            tags[i].playbackRate = vscSpeed;
         }
     }
 
-    if (videoTag != null) {
-        videoTag.playbackRate = vscSpeed;
-        console.log("vsc: video speed changed -> " + vscSpeed);
-    } else {
-        console.log("No video tag found :(");
-    }
+    if (videoTags.length) {
+        changeTags(videoTags);
+    } else res = false;
+
+    if (iframeTags.length) {
+        for (var j=0; j<iframeTags.length; j++) {
+            changeTags(iframeTags[j].contentWindow.document.querySelectorAll("video"));
+        }
+    } else res = false;
+
+    if (!res) console.log("No video tag found :(");
 }
 
 document.querySelector("#vscVelocity").addEventListener("change", function(event) {
@@ -57,6 +59,9 @@ document.querySelector("#vscVelocity").addEventListener("change", function(event
         vscManualVelocity.id    = "vscManualVelocity";
         vscManualVelocity.placeholder = "1.0";
         vscManualVelocity.style = "display:block;width:40pt";
+        vscManualVelocity.addEventListener("keyup", function(){
+            this.value = this.value.replace(",", ".");
+        })
         vscManualVelocity.addEventListener("keydown",function(event){
             if (event.key == "Enter") {
                 vscUpdateVideoSpeed(this.value);
