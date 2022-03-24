@@ -2,6 +2,8 @@
 ** Video Speed Control
 */
 
+vscGlobalSpeed = 1;
+
 var vscContainer   = document.createElement("div");
 vscContainer.id    = "vscContainer";
 vscContainer.style = "position:fixed;top:0px;right:0px;z-index:10000";
@@ -28,6 +30,9 @@ function vscUpdateVideoSpeed(vscSpeed) {
     var videoTags = document.querySelectorAll("video");
     var iframeTags = document.querySelectorAll("iframe");
     var res = true;
+
+    if (vscSpeed) vscGlobalSpeed = vscSpeed;
+    else vscSpeed = vscGlobalSpeed;
 
     var changeTags = function(tags) {
         for (var i=0; i<tags.length; i++) {
@@ -71,3 +76,24 @@ document.querySelector("#vscVelocity").addEventListener("change", function(event
         document.querySelector("#vscContainer").appendChild(vscManualVelocity).focus();
     }
 });
+
+const vscObserver = new MutationObserver(function(mutationList){
+    console.log(mutationList);
+    mutationList.forEach(function(mutation){
+        if (mutation.type === 'childList') {
+            mutation.addedNodes.forEach(function(element){
+                if (element.localName === 'video') vscUpdateVideoSpeed(vscGlobalSpeed);
+            });
+        }
+    });
+});
+
+function vscRegisterObserver() {
+    var obs1 = document.querySelector("body");
+    var obs2 = document.querySelector("iframe").contentDocument.body;
+    var conf = {subtree:true,childList:true};
+    vscObserver.observe(obs1, conf);
+    vscObserver.observe(obs2, conf);
+}
+vscRegisterObserver();
+window.addEventListener("load", vscRegisterObserver);
