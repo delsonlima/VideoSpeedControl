@@ -3,6 +3,7 @@
 */
 
 vscGlobalSpeed = 1;
+vscDebug=false;
 
 var vscContainer   = document.createElement("div");
 vscContainer.id    = "vscContainer";
@@ -36,9 +37,9 @@ function vscUpdateVideoSpeed(vscSpeed) {
 
     var changeTags = function(tags) {
         for (var i=0; i<tags.length; i++) {
-            console.log("vsc: video speed changed -> " + vscSpeed);
+            if (vscDebug) console.log("vsc: video speed changed -> " + vscSpeed);
             tags[i].playbackRate = vscSpeed;
-        }
+       }
     }
 
     if (videoTags.length) {
@@ -47,11 +48,13 @@ function vscUpdateVideoSpeed(vscSpeed) {
 
     if (iframeTags.length) {
         for (var j=0; j<iframeTags.length; j++) {
-            changeTags(iframeTags[j].contentWindow.document.querySelectorAll("video"));
+            try {
+                changeTags(iframeTags[j].contentWindow.document.querySelectorAll("video"));
+            } catch {}
         }
     } else res = false;
 
-    if (!res) console.log("No video tag found :(");
+    if (vscDebug) { if (!res) console.log("No video tag found :("); }
 }
 
 document.querySelector("#vscVelocity").addEventListener("change", function(event) {
@@ -78,11 +81,16 @@ document.querySelector("#vscVelocity").addEventListener("change", function(event
 });
 
 const vscObserver = new MutationObserver(function(mutationList){
-    console.log(mutationList);
     mutationList.forEach(function(mutation){
-        if (mutation.type === 'childList') {
+       if (mutation.type === 'childList') {
             mutation.addedNodes.forEach(function(element){
-                if (element.localName === 'video') vscUpdateVideoSpeed(vscGlobalSpeed);
+                if (element.localName === 'video') {
+                    if (vscDebug) console.log("video tag direct added");
+                    vscUpdateVideoSpeed();
+                } else if (element.localName != null && element.localName != 'span') {
+                    if (vscDebug) console.log("video tag added as child");
+                    vscUpdateVideoSpeed();
+                }
             });
         }
     });
@@ -91,7 +99,13 @@ const vscObserver = new MutationObserver(function(mutationList){
 function vscRegisterObserver() {
     var obs1 = document.querySelector("body");
     var obs2 = document.querySelector("iframe").contentDocument.body;
-    var conf = {subtree:true,childList:true};
+    //var conf = {subtree:true,childList:true};
+    var conf = {
+        attributes: true,
+        childList: true,
+        subtree: true,
+        characterData: true
+    };
     vscObserver.observe(obs1, conf);
     vscObserver.observe(obs2, conf);
 }
