@@ -29,32 +29,42 @@ for (var i = 0; i < vscVelocitiesArray.length; i++) {
 
 function vscUpdateVideoSpeed(vscSpeed) {
     var videoTags = document.querySelectorAll("video");
+    var audioTags = document.querySelectorAll("audio");
     var iframeTags = document.querySelectorAll("iframe");
-    var res = true;
+    var mediaTags = [];
 
     if (vscSpeed) vscGlobalSpeed = vscSpeed;
     else vscSpeed = vscGlobalSpeed;
 
-    var changeTags = function(tags) {
-        for (var i=0; i<tags.length; i++) {
-            if (vscDebug) console.log("vsc: video speed changed -> " + vscSpeed);
-            tags[i].playbackRate = vscSpeed;
-       }
+    var parseTags = function(tags) {
+        tags.forEach(tag => {
+            mediaTags.push(tag);
+        });
     }
 
-    if (videoTags.length) {
-        changeTags(videoTags);
-    } else res = false;
+    parseTags(videoTags);
+    parseTags(audioTags);
 
-    if (iframeTags.length) {
-        for (var j=0; j<iframeTags.length; j++) {
-            try {
-                changeTags(iframeTags[j].contentWindow.document.querySelectorAll("video"));
-            } catch {}
-        }
-    } else res = false;
+    iframeTags.forEach(tag => {
+        try {
+            var vTags = tag.contentWindow.document.querySelectorAll("video");
+            if (vTags.length) parseTags(vTags);
+        } catch {}
 
-    if (vscDebug) { if (!res) console.log("No video tag found :("); }
+        try {
+            var aTags = tag.contentWindow.document.querySelectorAll("audio");
+            if (aTags.length) parseTags(aTags);
+        } catch {}
+    });
+
+    mediaTags.forEach(tag => {
+        if (vscDebug) console.log("vsc: media speed changed -> " + vscSpeed);
+        tag.playbackRate = vscSpeed;
+    });
+
+    if (vscDebug) {
+        if (!mediaTags.length) console.log("No media tag found :(");
+    }
 }
 
 document.querySelector("#vscVelocity").addEventListener("change", function(event) {
